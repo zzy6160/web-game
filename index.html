@@ -1,0 +1,215 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>恐龍跑酷</title>
+
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: url('3.jpg') no-repeat center center fixed;
+    background-size: cover;
+    font-family: Arial;
+  }
+
+  /* 雲（背景） */
+  .cloud {
+    position: absolute;
+    top: 50px;
+    width: 80px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+  }
+
+  /* 地面 */
+  #ground {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 60px;
+    background: #7cfc00;
+  }
+
+  /* 玩家角色 - 4倍大小 */
+  #player {
+    position: absolute;
+    bottom: 60px;
+    left: 80px;
+    width: 200px;  /* 4倍寬度 */
+    height: 280px; /* 4倍高度 */
+    background: url('1.jpg') no-repeat center center;
+    background-size: contain; /* 確保圖片縮放適合容器 */
+  }
+
+  /* 障礙物 - 縮小40% */
+  .obstacle {
+    position: absolute;
+    bottom: 60px;
+    width: 126px;  /* 6.3倍寬度 (原始10.5倍縮小40%) */
+    height: 176px; /* 6.3倍高度 (原始10.5倍縮小40%) */
+    background: url('2.jpg') no-repeat center center;
+    background-size: contain; /* 確保圖片縮放適合容器 */
+  }
+
+  /* 分數 */
+  #score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+    color: black;
+  }
+
+  /* 遊戲結束 */
+  #gameOver {
+    display: none;
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 36px;
+    color: red;
+  }
+
+  button {
+    font-size: 20px;
+    padding: 10px 20px;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="score">分數：0</div>
+<div id="player"></div>
+<div id="ground"></div>
+
+<div id="gameOver">
+  遊戲結束<br><br>
+  <button onclick="restart()">重新開始</button>
+</div>
+
+<script>
+  const player = document.getElementById("player");
+  const scoreText = document.getElementById("score");
+  const gameOverText = document.getElementById("gameOver");
+
+  let velocityY = 0;
+  let gravity = 1;
+  let jumping = false;
+  let score = 0;
+  let gameOver = false;
+
+  // Increase the jump height by 50%
+  const jumpHeight = -22.5; // Original jump height was -15, now increased by 50%
+
+  document.addEventListener("keydown", () => {
+    if (!jumping) {
+      velocityY = jumpHeight; // Use the new jump height
+      jumping = true;
+    }
+  });
+
+  function updatePlayer() {
+    if (gameOver) return;
+
+    velocityY += gravity;
+    let bottom = parseInt(getComputedStyle(player).bottom);
+    bottom -= velocityY;
+
+    if (bottom <= 60) {
+      bottom = 60;
+      jumping = false;
+      velocityY = 0;
+    }
+
+    player.style.bottom = bottom + "px";
+  }
+
+  function createObstacle() {
+    if (gameOver) return;
+
+    const obstacle = document.createElement("div");
+    obstacle.className = "obstacle";
+    obstacle.style.left = window.innerWidth + "px";
+    document.body.appendChild(obstacle);
+
+    let move = setInterval(() => {
+      if (gameOver) {
+        clearInterval(move);
+        obstacle.remove();
+        return;
+      }
+
+      let left = parseInt(obstacle.style.left);
+      left -= 6;
+      obstacle.style.left = left + "px";
+
+      // 碰撞偵測
+      const playerRect = player.getBoundingClientRect();
+      const obsRect = obstacle.getBoundingClientRect();
+
+      if (
+        playerRect.right > obsRect.left &&
+        playerRect.left < obsRect.right &&
+        playerRect.bottom > obsRect.top
+      ) {
+        endGame();
+      }
+
+      if (left < -176) { // Adjusted for obstacle size
+        obstacle.remove();
+        clearInterval(move);
+        score++;
+      }
+    }, 20);
+  }
+
+  function createCloud() {
+    const cloud = document.createElement("div");
+    cloud.className = "cloud";
+    cloud.style.top = Math.random() * 150 + "px";
+    cloud.style.left = window.innerWidth + "px";
+    document.body.appendChild(cloud);
+
+    let move = setInterval(() => {
+      let left = parseInt(cloud.style.left);
+      left -= 2;
+      cloud.style.left = left + "px";
+
+      if (left < -100) {
+        cloud.remove();
+        clearInterval(move);
+      }
+    }, 50);
+  }
+
+  function updateScore() {
+    if (!gameOver) {
+      scoreText.textContent = "分數：" + score;
+      requestAnimationFrame(updateScore);
+    }
+  }
+
+  function endGame() {
+    gameOver = true;
+    gameOverText.style.display = "block";
+  }
+
+  function restart() {
+    location.reload();
+  }
+
+  updateScore();
+  setInterval(updatePlayer, 20);
+  setInterval(createObstacle, 2000);
+  setInterval(createCloud, 3000);
+</script>
+
+</body>
+</html>
